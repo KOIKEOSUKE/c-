@@ -74,6 +74,15 @@
     return order && order.approved && !order.cancelled;
   }
 
+  // 承認済みの製造依頼（当初分＋追加分）から、総部数と全体の完了を求め直す。
+  function refreshTotals(state, order) {
+    const production = [...state.requests.values()].filter(request => request.orderId === order.id &&
+      ['order', 'additional'].includes(request.type) && request.answer === '承認');
+    order.quantity = order.initialQuantity + production.filter(request => request.type === 'additional')
+      .reduce((sum, request) => sum + request.targetQuantity, 0);
+    order.finished = production.length > 0 && production.every(request => request.finished);
+  }
+
   function applyEvent(state, event) {
     validateEvent(event);
     const order = state.orders.get(event.orderId);
@@ -84,9 +93,10 @@
       requireThat(!order && !request, '注文IDまたは依頼IDが重複しています。');
       state.orders.set(event.orderId, {
         id: event.orderId, originalRequestId: event.requestId, product: event.product,
-        paper: event.paper, quantity: Number(event.quantity), dueDate: event.dueDate,
-        approved: false, cancelled: false, progress: '', progressAt: '',
-        expectedDate: '', delayReason: '', goodQuantity: 0, initialFinished: false, proofStatus: ''
+        paper: event.paper, quantity: Number(event.quantity), initialQuantity: Number(event.quantity),
+        dueDate: event.dueDate, approved: false, cancelled: false, progress: '', progressAt: '',
+        expectedDate: '', delayReason: '', goodQuantity: 0, initialFinished: false, finished: false,
+        proofStatus: ''
       });
     } else {
       requireThat(order, '該当する注文がありません。先行するCSVを読み込んでください。');
@@ -110,8 +120,9 @@
       if (approved && request.type === 'change') {
         requireThat(!order.initialFinished, '当初分の製造完了後は注文変更を承認できません。');
         order.paper = request.paper;
-        order.quantity = Number(request.quantity);
-        state.requests.get(order.originalRequestId).targetQuantity = order.quantity;
+        // 変更依頼の部数は当初分の部数。追加分はそのまま残す。
+        order.initialQuantity = Number(request.quantity);
+        state.requests.get(order.originalRequestId).targetQuantity = order.initialQuantity;
       }
       if (approved && request.type === 'cancel') {
         requireThat(!order.initialFinished, '当初分の製造完了後はキャンセルを承認できません。');
@@ -124,6 +135,7 @@
       request.answer = event.decision;
       request.confirmedDueDate = event.confirmedDueDate || request.dueDate || '';
       request.answerReason = event.reason;
+      refreshTotals(state, order);
       return;
     }
 
@@ -167,6 +179,7 @@
         request.completedDate = event.completedDate;
         order.goodQuantity += request.goodQuantity;
         if (request.type === 'order') order.initialFinished = true;
+        refreshTotals(state, order);
         break;
     }
   }
