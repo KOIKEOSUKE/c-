@@ -19,7 +19,7 @@
       <p>お客様の注文を「製造依頼」として登録し、書き出したCSVを製造部に渡します。製造部から届いた「依頼回答」CSVを取り込むと、承認・却下と確定納期が反映されます。</p>
       <p>承認済みの注文には、注文変更・キャンセル・追加製造を依頼できます。製造部から「校正確認依頼」が届いたら、内容を確認して「校正回答」（承認または修正依頼）を書き出してください。</p>
       <p>製造進捗・納期遅延・製造完了のCSVを取り込むと、注文一覧の状態が更新されます。</p>
-      <p>データは開いている画面で保持します。閉じる前に台帳を保存し、再開時に開き直してください。</p>
+      <p>データはこのブラウザ内に自動で一時保存され、リロードしたりタブを閉じたりしても、次に開いたときに復元されます。ただし、ブラウザのデータ消去や別のPCでは復元できないため、区切りのよいところで「台帳をCSVで保存」してください。同じ部署の画面を複数のタブで開かないでください。</p>
       <ul id="csv-types"></ul>
     </details>
 
@@ -45,9 +45,11 @@
         <section aria-labelledby="backup-title">
           <h2 id="backup-title">作業の保存・再開</h2>
           <button id="save-backup" type="button" class="secondary">台帳をCSVで保存</button>
+          <p id="autosave" class="hint" role="status"></p>
           <label>台帳を開く
             <input id="backup" type="file" accept=".csv,text/csv">
           </label>
+          <button id="clear-ledger" type="button" class="secondary">画面の台帳を消去</button>
         </section>
       </div>
     </div>

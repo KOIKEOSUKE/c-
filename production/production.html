@@ -18,7 +18,7 @@
       <summary>使い方とCSVの種類</summary>
       <p>営業部で書き出した「製造依頼」CSVを取り込み、「依頼回答」で承認または却下します。</p>
       <p>校正を行う場合は、製造部の校正確認依頼と営業部の校正回答を交換します。製造部は進捗・遅延・完了を必要に応じて書き出し、営業部に渡します。</p>
-      <p>データは開いている画面で保持します。閉じる前に台帳を保存し、再開時に開き直してください。</p>
+      <p>データはこのブラウザ内に自動で一時保存され、リロードしたりタブを閉じたりしても、次に開いたときに復元されます。ただし、ブラウザのデータ消去や別のPCでは復元できないため、区切りのよいところで「台帳をCSVで保存」してください。同じ部署の画面を複数のタブで開かないでください。</p>
       <ul id="csv-types"></ul>
     </details>
 
@@ -44,9 +44,11 @@
         <section aria-labelledby="backup-title">
           <h2 id="backup-title">作業の保存・再開</h2>
           <button id="save-backup" type="button" class="secondary">台帳をCSVで保存</button>
+          <p id="autosave" class="hint" role="status"></p>
           <label>台帳を開く
             <input id="backup" type="file" accept=".csv,text/csv">
           </label>
+          <button id="clear-ledger" type="button" class="secondary">画面の台帳を消去</button>
         </section>
       </div>
     </div>
