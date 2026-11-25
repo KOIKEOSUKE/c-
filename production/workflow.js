@@ -150,6 +150,11 @@
     }
 
     requireThat(availableOrder(order), '承認済みで有効な注文を選んでください。');
+    // 製造完了済みの注文が「印刷中」や「遅延」に上書きされないよう、進捗・遅延通知は受け付けない。
+    // 追加製造が承認されれば order.finished は false に戻るため、再び通知できる。
+    if (['progress', 'delay'].includes(event.type)) {
+      requireThat(!order.finished, '製造完了済みの注文には' + interfaces[event.type].name + 'を送れません。');
+    }
     switch (event.type) {
       case 'proof': {
         requireThat(!proof, '校正IDが重複しています。');
