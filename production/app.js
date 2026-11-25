@@ -18,7 +18,7 @@
   };
   const actionHelp = {
     order: '注文IDと依頼IDは自動で発行します。',
-    change: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文を変更できます。変更後の値を入力してください。',
+    change: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文を変更できます。変更後の値を入力してください（部数は追加分を除いた当初分の部数です）。',
     cancel: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文をキャンセルできます。',
     additional: '承認済みの注文に追加の部数を依頼します。',
     proofReply: '回答待ちの校正がある注文を選び、承認または修正依頼を回答します。修正依頼ではコメントが必須です。'
@@ -128,7 +128,8 @@
       input.value = last ? Number(last.version) + 1 : 1;
     }
     if (type === 'change' && order && ['paper', 'quantity', 'dueDate'].includes(field)) {
-      input.value = order[field];
+      // 変更できるのは当初分なので、部数は追加分を含まない当初分の部数を初期値にする。
+      input.value = field === 'quantity' ? order.initialQuantity : order[field];
     }
     return input;
   }
@@ -179,7 +180,8 @@
     const request = state.requests.get(order.originalRequestId);
     if (order.cancelled) return 'キャンセル済み';
     if (!order.approved) return request.answer === '却下' ? '製造依頼却下' : '製造承認待ち';
-    if (order.initialFinished) return order.goodQuantity < order.quantity ? '完了・不足あり' : '完了';
+    if (order.finished) return order.goodQuantity < order.quantity ? '完了・不足あり' : '完了';
+    if (order.initialFinished) return '当初分完了・追加製造中';
     return order.progress || '製造承認済み';
   }
 
