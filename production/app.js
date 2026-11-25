@@ -21,7 +21,8 @@
     change: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文を変更できます。変更後の値を入力してください（部数は追加分を除いた当初分の部数です）。',
     cancel: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文をキャンセルできます。',
     additional: '承認済みの注文に追加の部数を依頼します。',
-    proofReply: '回答待ちの校正がある注文を選び、承認または修正依頼を回答します。修正依頼ではコメントが必須です。'
+    proofReply: '回答待ちの校正がある注文を選び、承認または修正依頼を回答します。修正依頼ではコメントが必須です。',
+    finish: '校正が未承認（回答待ち・修正依頼中）の注文は選択できません。営業部の校正承認を取り込んでから報告してください。'
   };
   const storageKey = 'printWorkflow:' + department;
   let events = [];
@@ -82,6 +83,11 @@
       return orders.filter(order => workflow.availableOrder(order) && !order.initialFinished &&
         ![...state.requests.values()].some(request =>
           request.orderId === order.id && request.type === 'cancel' && !request.answer));
+    }
+    if (type === 'finish') {
+      // 校正が回答待ち・修正依頼中の注文は完了報告が弾かれるため、入力前に選択肢から除外する。
+      return orders.filter(order => workflow.availableOrder(order) &&
+        (!order.proofStatus || order.proofStatus.startsWith('承認')));
     }
     return orders.filter(workflow.availableOrder);
   }
