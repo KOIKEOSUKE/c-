@@ -154,9 +154,11 @@
       case 'proof': {
         requireThat(!proof, '校正IDが重複しています。');
         const previous = [...state.proofs.values()].filter(item => item.orderId === order.id).at(-1);
-        requireThat(!previous || ((previous.answer === '修正依頼' || order.reproofRequired) &&
-          Number(event.version) > Number(previous.version)),
-          '前の校正に修正依頼があり（または注文変更で再校正が必要で）、版番号が上がっていることを確認してください。');
+        // 前の校正に回答（承認・修正依頼）済み、または注文変更で無効になっていれば次の版を出せる。
+        // 承認済みでも、仕様変更や追加製造に伴う第2版・第3版の校正を出し直せるようにする。
+        requireThat(!previous || previous.answer, '前の校正（第' + (previous && previous.version) + '版）が回答待ちです。回答を取り込んでから次の版を依頼してください。');
+        requireThat(!previous || Number(event.version) > Number(previous.version),
+          '版番号は前の校正（第' + (previous && previous.version) + '版）より大きくしてください。');
         state.proofs.set(event.proofId, { ...event, answer: '' });
         order.reproofRequired = false;
         order.proofStatus = '回答待ち（第' + event.version + '版）';

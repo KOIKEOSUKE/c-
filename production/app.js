@@ -23,7 +23,7 @@
     additional: '承認済みの注文に追加の部数を依頼します。',
     proofReply: '回答待ちの校正がある注文を選び、承認または修正依頼を回答します。修正依頼ではコメントが必須です。',
     finish: '校正が未承認（回答待ち・修正依頼中・注文変更による要再校正）の注文は選択できません。営業部の校正承認を取り込んでから報告してください。',
-    proof: '注文変更（用紙・部数）を承認した注文は「要再校正」になります。新しい版番号で校正確認依頼を出し直してください。'
+    proof: '回答待ちの校正がない注文を選べます。承認済みの注文でも、仕様変更や追加製造に合わせて新しい版番号（第2版・第3版…）で再校正を依頼できます。注文変更（用紙・部数）を承認した注文は「要再校正」になるので、新しい版で出し直してください。再校正を出すと、承認されるまで製造完了報告はできません。'
   };
   const storageKey = 'printWorkflow:' + department;
   let events = [];
@@ -84,6 +84,11 @@
       return orders.filter(order => workflow.availableOrder(order) && !order.initialFinished &&
         ![...state.requests.values()].some(request =>
           request.orderId === order.id && request.type === 'cancel' && !request.answer));
+    }
+    if (type === 'proof') {
+      // 回答待ちの校正がある注文は次の版を出せないため除外する（承認済み・修正依頼中の注文は再校正できる）。
+      return orders.filter(order => workflow.availableOrder(order) &&
+        ![...state.proofs.values()].some(proof => proof.orderId === order.id && !proof.answer));
     }
     if (type === 'finish') {
       // 校正が回答待ち・修正依頼中の注文は完了報告が弾かれるため、入力前に選択肢から除外する。
