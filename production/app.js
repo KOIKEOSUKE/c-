@@ -18,8 +18,8 @@
   };
   const actionHelp = {
     order: '注文IDと依頼IDは自動で発行します。',
-    change: '製造部に承認され、当初分が未完了の注文を変更できます。変更後の値を入力してください。',
-    cancel: '製造部に承認され、当初分が未完了の注文をキャンセルできます。',
+    change: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文を変更できます。変更後の値を入力してください。',
+    cancel: '製造部に承認され、当初分が未完了で、回答待ちのキャンセル依頼がない注文をキャンセルできます。',
     additional: '承認済みの注文に追加の部数を依頼します。',
     proofReply: '回答待ちの校正がある注文を選び、承認または修正依頼を回答します。修正依頼ではコメントが必須です。'
   };
@@ -78,7 +78,10 @@
         [...state.proofs.values()].some(proof => proof.orderId === order.id && !proof.answer));
     }
     if (['change', 'cancel'].includes(type)) {
-      return orders.filter(order => workflow.availableOrder(order) && !order.initialFinished);
+      // 未回答のキャンセル依頼がある注文は、承認されると後続の依頼を承認できなくなるため除外する。
+      return orders.filter(order => workflow.availableOrder(order) && !order.initialFinished &&
+        ![...state.requests.values()].some(request =>
+          request.orderId === order.id && request.type === 'cancel' && !request.answer));
     }
     return orders.filter(workflow.availableOrder);
   }
