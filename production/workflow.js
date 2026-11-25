@@ -96,7 +96,7 @@
         paper: event.paper, quantity: Number(event.quantity), initialQuantity: Number(event.quantity),
         dueDate: event.dueDate, approved: false, cancelled: false, progress: '', progressAt: '',
         expectedDate: '', delayReason: '', goodQuantity: 0, initialFinished: false, finished: false,
-        proofStatus: ''
+        proofStatus: '', reproofRequired: false
       });
     } else {
       requireThat(order, '該当する注文がありません。先行するCSVを読み込んでください。');
@@ -119,6 +119,16 @@
       }
       if (approved && request.type === 'change') {
         requireThat(!order.initialFinished, '当初分の製造完了後は注文変更を承認できません。');
+        const specChanged = request.paper !== order.paper || Number(request.quantity) !== order.initialQuantity;
+        const proofs = [...state.proofs.values()].filter(item => item.orderId === order.id);
+        if (specChanged && proofs.length) {
+          // 用紙・部数が変わったら、それまでの校正結果は使えない。回答待ちの校正も無効にして再校正を求める。
+          for (const item of proofs) {
+            if (!item.answer) item.answer = '無効（注文変更）';
+          }
+          order.proofStatus = '要再校正（注文変更）';
+          order.reproofRequired = true;
+        }
         order.paper = request.paper;
         // 変更依頼の部数は当初分の部数。追加分はそのまま残す。
         order.initialQuantity = Number(request.quantity);
@@ -144,9 +154,11 @@
       case 'proof': {
         requireThat(!proof, '校正IDが重複しています。');
         const previous = [...state.proofs.values()].filter(item => item.orderId === order.id).at(-1);
-        requireThat(!previous || (previous.answer === '修正依頼' && Number(event.version) > Number(previous.version)),
-          '前の校正に修正依頼があり、版番号が上がっていることを確認してください。');
+        requireThat(!previous || ((previous.answer === '修正依頼' || order.reproofRequired) &&
+          Number(event.version) > Number(previous.version)),
+          '前の校正に修正依頼があり（または注文変更で再校正が必要で）、版番号が上がっていることを確認してください。');
         state.proofs.set(event.proofId, { ...event, answer: '' });
+        order.reproofRequired = false;
         order.proofStatus = '回答待ち（第' + event.version + '版）';
         break;
       }
